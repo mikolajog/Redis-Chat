@@ -1,9 +1,10 @@
 import redis
 
+
 class RedisChat:
     def __init__(self, host, port, password, db):
         self.r_connector = redis.Redis(host=host, port=port,
-                        password=password, db=db)
+                                       password=password, db=db)
         self.login = ""
         self.pubsub = self.r_connector.pubsub()
         self.login_or_register()
@@ -30,7 +31,7 @@ class RedisChat:
     def check_if_correct_user(self, login, password):
         exists = self.r_connector.hexists('users', login)
         if exists:
-            if password== self.r_connector.hget('users', login).decode("utf-8"):
+            if password == self.r_connector.hget('users', login).decode("utf-8"):
                 return True
             else:
                 return False
@@ -61,10 +62,26 @@ class RedisChat:
         SHOW_FRIENDS_ON_CHAT = "11"
         SUBSCRIBE_TO_CHANNELS_BY = "12"
         UNSUBSCRIBE_TO_CHANNELS_BY = "13"
-        POSSIBILITIES = [LOGOUT, PUBLISH_TO_CHANNEL, PRINT_ALL_CHANNELS, SUBSCRIBE_TO_CHANNEL, GET_MESSAGES, UNSUBSCRIBE_CHANNEL, GET_LOGGED_IN_TO_CHANNEL, ADD_FRIEND, SHOW_FRIENDS, REMOVE_FRIEND, SHOW_FRIENDS_ON_CHAT, SUBSCRIBE_TO_CHANNELS_BY, UNSUBSCRIBE_TO_CHANNELS_BY]
+        POSSIBILITIES = [LOGOUT, PUBLISH_TO_CHANNEL, PRINT_ALL_CHANNELS, SUBSCRIBE_TO_CHANNEL, GET_MESSAGES,
+                         UNSUBSCRIBE_CHANNEL, GET_LOGGED_IN_TO_CHANNEL, ADD_FRIEND, SHOW_FRIENDS, REMOVE_FRIEND,
+                         SHOW_FRIENDS_ON_CHAT, SUBSCRIBE_TO_CHANNELS_BY, UNSUBSCRIBE_TO_CHANNELS_BY]
         decision = ""
         while decision != LOGOUT:
-            decision = input("Pick option:\n1 - LOGOUT |\n2 - PUBLISH TO CHAT |\n3 - PRINT ALL CHATS |\n4 - SUBSCRIBE TO CHAT |\n5 - GET MESSAGES |\n6 - UNSUBSCRIBE CHAT |\n7 - GET LOGGED IN TO CHAT |\n8 - ADD FRIEND |\n9 - SHOW FRIENDS |\n10 - REMOVE FRIEND |\n11 - SHOW FRIENDS ON CHAT |\n12 - SUBSCRIBE TO CHAT BY |\n13 - UNSUBSCRIBE TO CHAT BY |\nchoice: ")
+            decision = input(
+                "Pick option:\n1 - LOGOUT |"
+                "\n2 - PUBLISH TO CHAT |"
+                "\n3 - PRINT ALL CHATS |"
+                "\n4 - SUBSCRIBE TO CHAT |"
+                "\n5 - GET MESSAGES |"
+                "\n6 - UNSUBSCRIBE CHAT |"
+                "\n7 - GET LOGGED IN TO CHAT |"
+                "\n8 - ADD FRIEND |"
+                "\n9 - SHOW FRIENDS |"
+                "\n10 - REMOVE FRIEND |"
+                "\n11 - SHOW FRIENDS ON CHAT |"
+                "\n12 - SUBSCRIBE TO CHAT BY |"
+                "\n13 - UNSUBSCRIBE TO CHAT BY |"
+                "\nchoice: ")
 
             if decision not in POSSIBILITIES:
                 print("Pick proper option!")
@@ -137,10 +154,11 @@ class RedisChat:
         list_of_channels = self.r_connector.pubsub_channels()
         print("Chats: ")
         for channel in list_of_channels:
-            print(" - ", channel.decode("utf-8"), " ", "numOfLoggedIn: ", self.get_number_of_subscribers_for_channel(channel.decode("utf-8")))
+            print(" - ", channel.decode("utf-8"), " ", "numOfLoggedIn: ",
+                  self.get_number_of_subscribers_for_channel(channel.decode("utf-8")))
 
     def get_number_of_subscribers_for_channel(self, channel):
-        return self.r_connector.scard("channel:"+channel)
+        return self.r_connector.scard("channel:" + channel)
 
     def subscribe_to_channel(self, channel):
         self.add_login_to_channel_logged_in(channel)
@@ -162,50 +180,49 @@ class RedisChat:
         self.r_connector.publish("allchat", message)
 
     def add_login_to_channel_logged_in(self, channel):
-        self.r_connector.sadd("channel:"+channel, self.login)
+        self.r_connector.sadd("channel:" + channel, self.login)
 
     def remove_login_from_channel_logged_in(self, channel):
-        self.r_connector.srem("channel:"+channel, self.login)
+        self.r_connector.srem("channel:" + channel, self.login)
 
     def get_logged_in_to_channel(self, channel):
         print("Logged in to chat ", channel, " :")
-        for l in self.r_connector.smembers("channel:"+channel):
+        for l in self.r_connector.smembers("channel:" + channel):
             print(" - ", l.decode("utf-8"))
 
     def add_friend(self, friend_login):
-        self.r_connector.sadd("friends:"+self.login, friend_login)
+        self.r_connector.sadd("friends:" + self.login, friend_login)
 
     def remove_friend(self, friend_login):
         self.r_connector.srem("friends:" + self.login, friend_login)
 
     def show_friends(self):
         print("My friends: ")
-        for f in self.r_connector.smembers("friends:"+self.login):
+        for f in self.r_connector.smembers("friends:" + self.login):
             print(" - ", f.decode("utf-8"))
 
     def show_friends_on_chat(self, channel):
         print("My friends: ")
-        for f in self.r_connector.smembers("friends:"+self.login):
-            if self.r_connector.sismember("channel:"+channel, f.decode("utf-8")):
+        for f in self.r_connector.smembers("friends:" + self.login):
+            if self.r_connector.sismember("channel:" + channel, f.decode("utf-8")):
                 status = "Logged"
             else:
                 status = "Not Logged"
             print(" - ", f.decode("utf-8"), " status:", status)
 
     def subscribe_to_channels_by(self, pattern):
-        for ch in self.r_connector.pubsub_channels("*"+pattern+"*"):
+        for ch in self.r_connector.pubsub_channels("*" + pattern + "*"):
             print(ch.decode("utf-8"))
             self.add_login_to_channel_logged_in(ch.decode("utf-8"))
-        self.pubsub.psubscribe("*"+pattern+"*")
+        self.pubsub.psubscribe("*" + pattern + "*")
 
     def unsubscribe_to_channels_by(self, pattern):
-        for ch in self.r_connector.pubsub_channels("*"+pattern+"*"):
+        for ch in self.r_connector.pubsub_channels("*" + pattern + "*"):
             print(ch.decode("utf-8"))
             self.remove_login_from_channel_logged_in(ch.decode("utf-8"))
-        self.pubsub.punsubscribe("*"+pattern+"*")
+        self.pubsub.punsubscribe("*" + pattern + "*")
+
 
 if __name__ == '__main__':
-    chat = RedisChat(host='redis-15207.c265.us-east-1-2.ec2.cloud.redislabs.com', port=15207, password='vu1ZurtuDfHNaWe7PEKoJcAQdPJdk7mH', db='0')
-
-
-
+    chat = RedisChat(host='***************', port=0,
+                     password='***************', db='*********')
